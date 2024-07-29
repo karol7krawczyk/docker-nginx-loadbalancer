@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx_exporter1:9113', 'nginx_exporter2:9113', 'nginx_exporter3:9113']
+
+rule_files:
+  - 'alert.rules'  # Reference your alert rules file

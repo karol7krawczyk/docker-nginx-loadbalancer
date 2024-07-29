@@ -1,0 +1,130 @@
+services:
+  nginx_base:
+    image: nginx:1.26-alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./default.conf:/etc/nginx/conf.d/default.conf
+      - ./app:/var/www/html
+    networks:
+      - lb_network
+    depends_on:
+      - php
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  nginx1:
+    extends:
+      service: nginx_base
+
+  nginx2:
+    extends:
+      service: nginx_base
+
+  nginx3:
+    extends:
+      service: nginx_base
+
+  loadbalancer:
+    image: nginx:1.26-alpine
+    volumes:
+      - ./loadbalancer.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - nginx1
+      - nginx2
+      - nginx3
+    ports:
+      - "80:80"
+    networks:
+      - lb_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  benchmark:
+    image: jordi/ab
+    depends_on:
+      - loadbalancer
+    command: ["-f", "/dev/null"]
+    entrypoint: ["/usr/bin/tail"]
+    networks:
+      - lb_network
+
+  php:
+    image: php:8.3-fpm-alpine
+    volumes:
+      - ./app:/var/www/html
+    networks:
+      - lb_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - lb_network
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - lb_network
+
+  nginx_exporter1:
+    image: nginx/nginx-prometheus-exporter:latest
+    environment:
+      - NGINX_STATUS_URL=http://nginx1/nginx_status
+    ports:
+      - "9113:9113"
+    networks:
+      - lb_network
+    depends_on:
+      - nginx1
+
+  nginx_exporter2:
+    image: nginx/nginx-prometheus-exporter:latest
+    environment:
+      - NGINX_STATUS_URL=http://nginx2/nginx_status
+    ports:
+      - "9114:9113"
+    networks:
+      - lb_network
+    depends_on:
+      - nginx2
+
+  nginx_exporter3:
+    image: nginx/nginx-prometheus-exporter:latest
+    environment:
+      - NGINX_STATUS_URL=http://nginx3/nginx_status
+    ports:
+      - "9115:9113"
+    networks:
+      - lb_network
+    depends_on:
+      - nginx3
+
+networks:
+  lb_network:
+    driver: bridge

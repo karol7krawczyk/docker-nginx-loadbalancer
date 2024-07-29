@@ -1,0 +1,12 @@
+groups:
+  - name: nginx_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate on NGINX"
+          description: "More than 0.1% of requests are returning 5xx errors."
+
