@@ -106,8 +106,8 @@ networks:
 
 ### Clone the repository
 ```bash
-git clone https://github.com/Karol7Krawczyk/nginx-load-balancer.git
-cd nginx-load-balancer
+git clone https://github.com/Karol7Krawczyk/docker-nginx-loadbalancer.git
+cd docker-nginx-loadbalancer
 ```
 
 ### Run in docker
